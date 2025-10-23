@@ -13,7 +13,7 @@ class Config:
     
     # Data path
     if system == "Windows":
-        DATA_DIR = r"C:\Data\HipMRI_Study_open"  # ← LOCAL COPY
+        DATA_DIR = r"H:\HipMRI_Study_open"  
     else:
         DATA_DIR = "/home/groups/comp3710/HipMRI_Study_open"
     
