@@ -61,15 +61,43 @@ class ProstateDataset3D(Dataset):
         mri_data = (mri_data - mri_data.mean()) / (mri_data.std() + 1e-8)
         
         # Convert to tensors
-        # Add channel dimension: (D, H, W) -> (1, D, H, W)
         mri_data = torch.from_numpy(mri_data).float().unsqueeze(0)
-        label_data = torch.from_numpy(label_data).long().unsqueeze(0)  # Add channel dim        
-        # Apply MONAI transforms if provided
+        label_data = torch.from_numpy(label_data).long().unsqueeze(0)
+        
+        # Extract patches to fit in GPU memory
+        patch_size = Config.PATCH_SIZE
+        
+        if self.is_train:
+            # Random crop for training
+            d, h, w = mri_data.shape[1:]
+            pd, ph, pw = patch_size
+            
+            # Random starting positions
+            d_start = torch.randint(0, max(1, d - pd + 1), (1,)).item()
+            h_start = torch.randint(0, max(1, h - ph + 1), (1,)).item()
+            w_start = torch.randint(0, max(1, w - pw + 1), (1,)).item()
+            
+            # Extract patches
+            mri_data = mri_data[:, d_start:d_start+pd, h_start:h_start+ph, w_start:w_start+pw]
+            label_data = label_data[:, d_start:d_start+pd, h_start:h_start+ph, w_start:w_start+pw]
+        else:
+            # Center crop for validation/test
+            d, h, w = mri_data.shape[1:]
+            pd, ph, pw = patch_size
+            
+            d_start = max(0, (d - pd) // 2)
+            h_start = max(0, (h - ph) // 2)
+            w_start = max(0, (w - pw) // 2)
+            
+            mri_data = mri_data[:, d_start:d_start+pd, h_start:h_start+ph, w_start:w_start+pw]
+            label_data = label_data[:, d_start:d_start+pd, h_start:h_start+ph, w_start:w_start+pw]
+        
+        # Apply MONAI transforms
         if self.transform and self.is_train:
-            # MONAI expects dict format
             data_dict = {'image': mri_data, 'label': label_data}
-            # Note: MONAI transforms need proper setup, simplified here
-            # In practice, you'd use MONAI's dictionary transforms
+            data_dict = self.transform(data_dict)
+            mri_data = data_dict['image']
+            label_data = data_dict['label']
         
         return mri_data, label_data
 
@@ -123,9 +151,6 @@ def get_data_loaders(batch_size=None):
         [train_size, val_size, test_size],
         generator=torch.Generator().manual_seed(Config.SEED)
     )
-    
-    # Update is_train flag
-    # Note: This is simplified; in practice, create separate dataset instances
     
     # Create dataloaders
     train_loader = DataLoader(
