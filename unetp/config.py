@@ -26,13 +26,13 @@ class Config:
     DEEP_SUPERVISION = True
     USE_INSTANCE_NORM = True
     
-    # Training parameters (RTX 2080 Super - 8GB VRAM)
+    # Training parameters 
     BATCH_SIZE = 1
     LEARNING_RATE = 1e-4
-    NUM_EPOCHS = 100
+    NUM_EPOCHS = 30
     WEIGHT_DECAY = 1e-5
     
-    # Mixed precision (CRITICAL for 8GB!)
+    # Mixed precision
     USE_AMP = True
     
     # Data splits
@@ -61,7 +61,7 @@ class Config:
     SAVE_FREQ = 5
     
     # Early stopping
-    PATIENCE = 15
+    PATIENCE = 5
     
     # Loss weights for deep supervision
     DEEP_SUPERVISION_WEIGHTS = [1.0, 0.5, 0.25]
