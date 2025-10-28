@@ -58,8 +58,8 @@ def evaluate_test_set(checkpoint_path='./checkpoints/best_model.pth'):
     
     # Load checkpoint safely
     try:
-        with torch.serialization.safe_globals([np.dtype, np._core.multiarray.scalar, np.dtypes.Float64DType]):
-            checkpoint = torch.load(checkpoint_path, map_location=device)
+        checkpoint = torch.load(checkpoint_path, map_location=device)
+
         
         model.load_state_dict(checkpoint['model_state_dict'])
         
