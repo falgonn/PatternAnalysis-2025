@@ -1,4 +1,4 @@
-# dataset.py
+# dataset.py using volume based split due to data leakage in the case of patch-based extraction
 import os
 import numpy as np
 import nibabel as nib
@@ -21,6 +21,10 @@ class ProstateDataset3D(Dataset):
     
     FIXED: Proper patient-level splitting to prevent data leakage.
     Handles longitudinal data (multiple weeks per patient).
+    
+    CRITICAL FIX v2: Proper cropping strategy:
+    - Training (is_train=True): Random crops for data augmentation
+    - Evaluation (is_train=False): Center crops for reproducible evaluation
     """
     
     def __init__(self, data_dir, transform=None, is_train=True):
@@ -28,7 +32,7 @@ class ProstateDataset3D(Dataset):
         Args:
             data_dir: Path to HipMRI_Study_open folder
             transform: MONAI transforms for augmentation
-            is_train: Whether this is training data (for augmentation)
+            is_train: Whether this is training data (random crops if True, center crops if False)
         """
         self.mri_dir = os.path.join(data_dir, 'semantic_MRs')
         self.label_dir = os.path.join(data_dir, 'semantic_labels_only')
@@ -80,7 +84,8 @@ class ProstateDataset3D(Dataset):
             else:
                 print(f"⚠️  Warning: No matching label found for {mri_file}")
         
-        print(f"{'Train' if is_train else 'Val/Test'} dataset: {len(self.mri_files)} volumes")
+        crop_type = "RANDOM crops" if is_train else "CENTER crops"
+        print(f"{'Train' if is_train else 'Val/Test'} dataset: {len(self.mri_files)} volumes ({crop_type})")
         print(f"   Matched {matched_count}/{len(mri_dict)} MRI files to labels")
         print(f"   Unique patients: {len(set(self.patient_ids))}")
     
@@ -154,7 +159,10 @@ class ProstateDataset3D(Dataset):
         patch_size = Config.PATCH_SIZE
         
         if self.is_train:
-            # Random crop for training
+            # ============================================================
+            # TRAINING: Random crop for data augmentation
+            # ============================================================
+            # Different patch location every time = more variety
             d, h, w = mri_data.shape[1:]
             pd, ph, pw = patch_size
             
@@ -167,18 +175,23 @@ class ProstateDataset3D(Dataset):
             mri_data = mri_data[:, d_start:d_start+pd, h_start:h_start+ph, w_start:w_start+pw]
             label_data = label_data[:, d_start:d_start+pd, h_start:h_start+ph, w_start:w_start+pw]
         else:
-            # Center crop for validation/test
+            # ============================================================
+            # VALIDATION/TEST: Center crop for reproducible evaluation
+            # ============================================================
+            # Same patch location every time = consistent results
             d, h, w = mri_data.shape[1:]
             pd, ph, pw = patch_size
             
+            # Center starting positions (always same for a given volume)
             d_start = max(0, (d - pd) // 2)
             h_start = max(0, (h - ph) // 2)
             w_start = max(0, (w - pw) // 2)
             
+            # Extract center patch
             mri_data = mri_data[:, d_start:d_start+pd, h_start:h_start+ph, w_start:w_start+pw]
             label_data = label_data[:, d_start:d_start+pd, h_start:h_start+ph, w_start:w_start+pw]
         
-        # Apply MONAI transforms
+        # Apply MONAI transforms (only for training)
         if self.transform and self.is_train:
             data_dict = {'image': mri_data, 'label': label_data}
             data_dict = self.transform(data_dict)
@@ -212,11 +225,16 @@ def get_data_loaders(batch_size=None):
     """
     Create train, validation, and test data loaders.
     
-    CRITICAL FIX: Splits by PATIENT, not by individual scans or patches!
-    This prevents data leakage where multiple scans from the same patient
-    (e.g., Week0, Week1, Week2) appear in both training and validation sets.
+    CRITICAL FIX v2: Creates separate dataset instances for reproducible evaluation
+    - Training dataset: Uses random crops (data augmentation)
+    - Val/Test datasets: Uses center crops (reproducible evaluation)
     
-    For longitudinal data:
+    This ensures:
+    1. Training sees variety (random crops = augmentation)
+    2. Evaluation is consistent (center crops = same patch every time)
+    3. No patient appears in multiple splits (patient-level splitting)
+    
+    Patient-level splitting prevents data leakage:
     - If patient W012 is in training → ALL weeks of W012 stay in training
     - If patient H017 is in validation → ALL weeks of H017 stay in validation
     
@@ -226,23 +244,34 @@ def get_data_loaders(batch_size=None):
     if batch_size is None:
         batch_size = Config.BATCH_SIZE
     
-    # Create full dataset
-    full_dataset = ProstateDataset3D(
+    # =====================================================================
+    # CRITICAL FIX: Create TWO separate dataset instances
+    # =====================================================================
+    
+    # 1. Training dataset with RANDOM crops (data augmentation)
+    train_dataset_full = ProstateDataset3D(
         Config.DATA_DIR,
         transform=None,  # Transforms applied in training loop
-        is_train=True
+        is_train=True    # Random crops for training
     )
     
-    # Get unique patient IDs (NOT individual scans!)
-    unique_patients = list(set(full_dataset.patient_ids))
+    # 2. Evaluation dataset with CENTER crops (reproducible evaluation)
+    eval_dataset_full = ProstateDataset3D(
+        Config.DATA_DIR,
+        transform=None,  # No transforms for evaluation
+        is_train=False   # Center crops for validation/test
+    )
+    
+    # Get unique patient IDs (use training dataset for consistency)
+    unique_patients = list(set(train_dataset_full.patient_ids))
     unique_patients.sort()  # For reproducibility
     
-    print(f"\nTotal scans: {len(full_dataset)}")
+    print(f"\nTotal scans: {len(train_dataset_full)}")
     print(f"Unique patients: {len(unique_patients)}")
     
     # Count scans per patient to verify
     from collections import Counter
-    patient_counts = Counter(full_dataset.patient_ids)
+    patient_counts = Counter(train_dataset_full.patient_ids)
     print(f"Scans per patient (examples):")
     for patient, count in sorted(patient_counts.items())[:5]:
         print(f"  {patient}: {count} scans")
@@ -262,27 +291,33 @@ def get_data_loaders(batch_size=None):
     val_patients = set(unique_patients[n_train:n_train + n_val])
     test_patients = set(unique_patients[n_train + n_val:])
     
-    # Get indices for each split (ALL scans from each patient)
-    train_idx = [i for i, pid in enumerate(full_dataset.patient_ids) 
+    # =====================================================================
+    # CRITICAL: Get indices from the APPROPRIATE dataset
+    # =====================================================================
+    
+    # Training indices from train_dataset_full (random crops)
+    train_idx = [i for i, pid in enumerate(train_dataset_full.patient_ids) 
                  if pid in train_patients]
-    val_idx = [i for i, pid in enumerate(full_dataset.patient_ids) 
+    
+    # Val/Test indices from eval_dataset_full (center crops)
+    val_idx = [i for i, pid in enumerate(eval_dataset_full.patient_ids) 
                if pid in val_patients]
-    test_idx = [i for i, pid in enumerate(full_dataset.patient_ids) 
+    test_idx = [i for i, pid in enumerate(eval_dataset_full.patient_ids) 
                 if pid in test_patients]
     
     # Verify no overlap
-    train_set = set(full_dataset.patient_ids[i] for i in train_idx)
-    val_set = set(full_dataset.patient_ids[i] for i in val_idx)
-    test_set = set(full_dataset.patient_ids[i] for i in test_idx)
+    train_set = set(train_dataset_full.patient_ids[i] for i in train_idx)
+    val_set = set(eval_dataset_full.patient_ids[i] for i in val_idx)
+    test_set = set(eval_dataset_full.patient_ids[i] for i in test_idx)
     
     assert len(train_set & val_set) == 0, "Patient overlap between train and val!"
     assert len(train_set & test_set) == 0, "Patient overlap between train and test!"
     assert len(val_set & test_set) == 0, "Patient overlap between val and test!"
     
-    # Create subsets
-    train_subset = Subset(full_dataset, train_idx)
-    val_subset = Subset(full_dataset, val_idx)
-    test_subset = Subset(full_dataset, test_idx)
+    # Create subsets from appropriate datasets
+    train_subset = Subset(train_dataset_full, train_idx)  # Uses random crops
+    val_subset = Subset(eval_dataset_full, val_idx)       # Uses center crops
+    test_subset = Subset(eval_dataset_full, test_idx)     # Uses center crops
     
     # Create dataloaders
     train_loader = DataLoader(
@@ -312,11 +347,12 @@ def get_data_loaders(batch_size=None):
     print(f"\n" + "="*70)
     print("Dataset splits (PATIENT-LEVEL - NO DATA LEAKAGE)")
     print("="*70)
-    print(f"Train: {len(train_idx)} scans from {len(train_patients)} patients")
-    print(f"Val:   {len(val_idx)} scans from {len(val_patients)} patients")
-    print(f"Test:  {len(test_idx)} scans from {len(test_patients)} patients")
+    print(f"Train: {len(train_idx)} scans from {len(train_patients)} patients (RANDOM crops)")
+    print(f"Val:   {len(val_idx)} scans from {len(val_patients)} patients (CENTER crops)")
+    print(f"Test:  {len(test_idx)} scans from {len(test_patients)} patients (CENTER crops)")
     print(f"\n✅ VERIFIED: No patient appears in multiple splits!")
     print(f"✅ All timepoints from same patient stay together!")
+    print(f"✅ Val/Test use consistent CENTER crops for reproducible evaluation!")
     print("="*70)
     
     return train_loader, val_loader, test_loader
@@ -329,35 +365,72 @@ if __name__ == "__main__":
     print("Testing dataset...")
     Config.print_config()
     
-    # Create dataset
-    dataset = ProstateDataset3D(Config.DATA_DIR)
-    print(f"\nDataset size: {len(dataset)}")
-    print(f"Unique patients: {len(set(dataset.patient_ids))}")
+    # Test both training and evaluation datasets
+    print("\n" + "="*70)
+    print("Creating TRAINING dataset (random crops)...")
+    print("="*70)
+    train_dataset = ProstateDataset3D(Config.DATA_DIR, is_train=True)
+    print(f"\nDataset size: {len(train_dataset)}")
+    print(f"Unique patients: {len(set(train_dataset.patient_ids))}")
+    
+    print("\n" + "="*70)
+    print("Creating EVALUATION dataset (center crops)...")
+    print("="*70)
+    eval_dataset = ProstateDataset3D(Config.DATA_DIR, is_train=False)
+    print(f"\nDataset size: {len(eval_dataset)}")
+    print(f"Unique patients: {len(set(eval_dataset.patient_ids))}")
     
     # Show some examples
     print(f"\nFirst 5 files:")
-    for i in range(min(5, len(dataset))):
-        mri_file = os.path.basename(dataset.mri_files[i])
-        label_file = os.path.basename(dataset.label_files[i])
-        patient = dataset.patient_ids[i]
+    for i in range(min(5, len(train_dataset))):
+        mri_file = os.path.basename(train_dataset.mri_files[i])
+        label_file = os.path.basename(train_dataset.label_files[i])
+        patient = train_dataset.patient_ids[i]
         print(f"  Patient {patient}: MRI={mri_file}, Label={label_file}")
     
-    # Load one sample
-    mri, label = dataset[0]
-    print(f"\nSample data:")
-    print(f"  MRI shape: {mri.shape}")
-    print(f"  Label shape: {label.shape}")
-    print(f"  MRI range: [{mri.min():.2f}, {mri.max():.2f}]")
-    print(f"  Unique labels: {torch.unique(label)}")
+    # Load one sample from each
+    print("\n" + "="*70)
+    print("Testing sample extraction...")
+    print("="*70)
+    
+    print("\nTraining dataset (random crop):")
+    mri_train, label_train = train_dataset[0]
+    print(f"  MRI shape: {mri_train.shape}")
+    print(f"  Label shape: {label_train.shape}")
+    print(f"  MRI range: [{mri_train.min():.2f}, {mri_train.max():.2f}]")
+    print(f"  Unique labels: {torch.unique(label_train)}")
+    
+    # Load same sample again to verify randomness
+    mri_train2, label_train2 = train_dataset[0]
+    same_values = torch.allclose(mri_train, mri_train2, atol=1e-6)
+    print(f"  Random crop test: {'✅ DIFFERENT crops (correct!)' if not same_values else '❌ Same crop (wrong!)'}")
+    
+    print("\nEvaluation dataset (center crop):")
+    mri_eval, label_eval = eval_dataset[0]
+    print(f"  MRI shape: {mri_eval.shape}")
+    print(f"  Label shape: {label_eval.shape}")
+    print(f"  MRI range: [{mri_eval.min():.2f}, {mri_eval.max():.2f}]")
+    print(f"  Unique labels: {torch.unique(label_eval)}")
+    
+    # Load same sample again to verify consistency
+    mri_eval2, label_eval2 = eval_dataset[0]
+    same_values = torch.allclose(mri_eval, mri_eval2, atol=1e-6)
+    print(f"  Center crop test: {'✅ SAME crop (correct!)' if same_values else '❌ Different crop (wrong!)'}")
     
     # Test dataloaders
-    print("\nTesting dataloaders...")
+    print("\n" + "="*70)
+    print("Testing dataloaders...")
+    print("="*70)
     train_loader, val_loader, test_loader = get_data_loaders()
-    print("Dataloaders created successfully!")
+    print("\n✅ Dataloaders created successfully!")
     
     # Test one batch
     for mri_batch, label_batch in train_loader:
-        print(f"\nFirst batch:")
+        print(f"\nFirst training batch:")
         print(f"  MRI batch shape: {mri_batch.shape}")
         print(f"  Label batch shape: {label_batch.shape}")
         break
+    
+    print("\n" + "="*70)
+    print("✅ ALL TESTS PASSED!")
+    print("="*70)

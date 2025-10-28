@@ -29,7 +29,7 @@ class Config:
     # Training parameters 
     BATCH_SIZE = 1
     LEARNING_RATE = 1e-4
-    NUM_EPOCHS = 30
+    NUM_EPOCHS = 10
     WEIGHT_DECAY = 1e-5
     
     # Mixed precision
