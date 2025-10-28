@@ -138,7 +138,7 @@ ReduceLROnPlateau (factor=0.5, patience=5)
 
 ---
 
-## 📈 Results
+## Results
 
 ### Test Set Performance (35 scans from 7 patients)
 
