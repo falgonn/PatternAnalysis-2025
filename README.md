@@ -186,24 +186,24 @@ Test performance actually exceeded validation, demonstrating excellent generaliz
 ### Example Predictions
 
 **Sample 1 - Good Performance**
-![Prediction Sample 1](./unetp/results/prediction_sample_1.png)
+![Prediction Sample 1](./recognition/results/prediction_sample_1.png)
 - Prostate Dice: 0.575
 - Shows typical case with good anatomical capture
 
 **Sample 2 - Moderate Case**
-![Prediction Sample 2](./unetp/results/prediction_sample_2.png)
+![Prediction Sample 2](./recognition/results/prediction_sample_2.png)
 - Prostate Dice: 0.527
 - Demonstrates variability in patient anatomy
 
 **Sample 3 - Excellent Performance**
-![Prediction Sample 3](./unetp/results/prediction_sample_3.png)
+![Prediction Sample 3](./recognition/results/prediction_sample_3.png)
 - Prostate Dice: 0.863
 - Well-centered, large prostate → best results
 
 ### Prostate-Focused Visualizations
 
 **Overlay Comparison:**
-![Prostate Sample 1](./unetp/results/prostate_sample_1.png)
+![Prostate Sample 1](./recognition/results/prostate_sample_1.png)
 
 **Color Legend:**
 - Red: Ground truth
@@ -223,7 +223,7 @@ Test performance actually exceeded validation, demonstrating excellent generaliz
 ```bash
 # Clone repository
 git clone https://github.com/yourusername/PatternAnalysis-2025.git
-cd PatternAnalysis-2025/unetp
+cd PatternAnalysis-2025/recognition
 
 # Create virtual environment
 python -m venv patternanalysis_env
