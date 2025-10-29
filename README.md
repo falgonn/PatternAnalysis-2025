@@ -234,20 +234,19 @@ Outputs are stored in `recognition/results/` with performance charts, prediction
 ---
 
 ## Project Structure
-
 ```
 patternanalysis-2025/
 ├── recognition/
-│   ├── config.py
-│   ├── dataset.py
-│   ├── modules.py
-│   ├── train.py
-│   ├── test_data_eval.py
-│   ├── predict.py
-│   ├── checkpoints/
-│   ├── results/
-│   └── logs/
-└── README.md
+│   ├── config.py              # Configuration settings (patch size, hyperparameters, paths)
+│   ├── dataset.py             # Data loading with patient-level splitting and augmentation
+│   ├── modules.py             # Improved 3D U-Net architecture definition
+│   ├── train.py               # Training script with deep supervision and mixed precision
+│   ├── test_data_eval.py      # Optional test set evaluation with detailed metrics and visualization
+│   ├── predict.py             # Prediction and visualization generation for sample cases
+│   ├── checkpoints/           # Saved model weights and training checkpoints
+│   ├── results/               # Training curves, test results, and prediction visualizations
+│   └── logs/                  # TensorBoard logs for training monitoring
+└── README.md                  # Project documentation
 ```
 
 ## Discussion
