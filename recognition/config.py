@@ -1,4 +1,8 @@
-# config.py
+"""
+Configuration for 3D Prostate Segmentation with Improved U-Net
+FULL TRAINING with 128x128x128 patches
+"""
+
 import os
 import platform
 import socket
@@ -29,7 +33,7 @@ class Config:
     # Training parameters 
     BATCH_SIZE = 1
     LEARNING_RATE = 1e-4
-    NUM_EPOCHS = 10
+    NUM_EPOCHS = 10  # ← FULL TRAINING (not 3!)
     WEIGHT_DECAY = 1e-5
     
     # Mixed precision
@@ -39,13 +43,13 @@ class Config:
     TRAIN_SPLIT = 0.7
     VAL_SPLIT = 0.15
     
-    # Patch size
-    PATCH_SIZE = (96, 96, 96)
+    # Patch size - 128³ for optimal performance
+    PATCH_SIZE = (128, 128, 128)
     
     # Output directories
-    CHECKPOINT_DIR = "./checkpoints"
-    RESULTS_DIR = "./results"
-    LOG_DIR = "./logs"
+    CHECKPOINT_DIR = "./checkpoints_128"  # ← Not "_test"
+    RESULTS_DIR = "./results_128"         # ← Not "_test"
+    LOG_DIR = "./logs_128"                # ← Not "_test"
     
     # Device
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -53,15 +57,15 @@ class Config:
     # Random seed
     SEED = 42
     
-    # Data loading (Windows: num_workers=0 to avoid issues)
+    # Data loading
     NUM_WORKERS = 0
     PIN_MEMORY = True if torch.cuda.is_available() else False
     
     # Checkpointing
-    SAVE_FREQ = 5
+    SAVE_FREQ = 5  # ← Save every 5 epochs (not 1)
     
     # Early stopping
-    PATIENCE = 5
+    PATIENCE = 5  # ← Real early stopping
     
     # Loss weights for deep supervision
     DEEP_SUPERVISION_WEIGHTS = [1.0, 0.5, 0.25]
@@ -77,7 +81,7 @@ class Config:
     def print_config(cls):
         """Print current configuration"""
         print("="*70)
-        print("Configuration - Improved 3D U-Net")
+        print("Configuration - Improved 3D U-Net [128³ PRODUCTION]")
         print("="*70)
         print(f"System          : {cls.system}")
         print(f"Hostname        : {cls.hostname}")

@@ -1,7 +1,12 @@
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
+
+# Compiled extensions
 *.so
+
+# Distribution / packaging
 .Python
 build/
 develop-eggs/
@@ -18,9 +23,29 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+
+# Virtual environments
 venv/
 ENV/
 env/
+.venv/
 patternanalysis_env/
 patternanalysis-2025/
-.venv
+
+# Logs and checkpoints
+logs/
+logs_*/
+checkpoints/
+checkpoints_*/
+*.tfevents.*
+
+# Training / results artifacts
+results_*/
+*.png
+*.csv
+
+# IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

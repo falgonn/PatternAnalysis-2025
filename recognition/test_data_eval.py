@@ -1,6 +1,6 @@
 """
 Evaluate trained model on the held-out test set.
-Run this AFTER training completes to get final, unbiased performance metrics.
+We can run this after training to get unbiased performance metrics.
 
 Usage:
     python test_data_eval.py
@@ -36,7 +36,7 @@ def calculate_dice_per_class(pred, target, num_classes=6):
     return dice_scores
 
 
-def evaluate_test_set(checkpoint_path='./checkpoints/best_model.pth'):
+def evaluate_test_set(checkpoint_path='./checkpoints_128/best_model.pth'):
     """
     Evaluate model on test set.
     """
@@ -45,15 +45,15 @@ def evaluate_test_set(checkpoint_path='./checkpoints/best_model.pth'):
     print("="*70)
     
     if not os.path.exists(checkpoint_path):
-        print(f"\n❌ ERROR: Checkpoint not found at {checkpoint_path}")
+        print(f"\nERROR: Checkpoint not found at {checkpoint_path}")
         print("   Please train the model first!")
         return None
     
     device = torch.device(Config.DEVICE)
-    print(f"\n🚀 Using device: {device}")
+    print(f"\nUsing device: {device}")
     
     # Load model
-    print("\n🏗️  Loading model...")
+    print("\nLoading model...")
     model = get_model().to(device)
     
     # Load checkpoint safely
@@ -66,20 +66,20 @@ def evaluate_test_set(checkpoint_path='./checkpoints/best_model.pth'):
         checkpoint_epoch = checkpoint.get('epoch', 'unknown')
         best_val_dice = checkpoint.get('mean_val_dice', checkpoint.get('best_dice', 'unknown'))
         
-        print(f"✅ Loaded checkpoint from epoch {checkpoint_epoch}")
+        print(f"Loaded checkpoint from epoch {checkpoint_epoch}")
         print(f"   Best validation Dice: {best_val_dice:.4f}" if isinstance(best_val_dice, float) else f"   Best validation Dice: {best_val_dice}")
     except Exception as e:
-        print(f"❌ Error loading checkpoint: {e}")
+        print(f"Error loading checkpoint: {e}")
         return None
     
     model.eval()
     
     # Load test data
-    print("\n📊 Loading test data...")
+    print("\n Loading test data...")
     _, _, test_loader = get_data_loaders()
     print(f"   Test set size: {len(test_loader.dataset)} samples")
     
-    print("\n🔍 Evaluating on test set...")
+    print("\n Evaluating on test set...")
     
     class_names = ['Background', 'Body', 'Bone', 'Bladder', 'Rectum', 'Prostate']
     all_dice_scores = {name: [] for name in class_names}
@@ -130,35 +130,35 @@ def evaluate_test_set(checkpoint_path='./checkpoints/best_model.pth'):
         prostate_min = np.min(all_dice_scores['Prostate'])
         prostate_max = np.max(all_dice_scores['Prostate'])
         
-        print(f"\n🎯 TARGET ORGAN (Prostate):")
+        print(f"\nTARGET ORGAN (Prostate):")
         print(f"   Mean:  {prostate_mean:.4f}")
         print(f"   Std:   {prostate_std:.4f}")
         print(f"   Range: [{prostate_min:.4f}, {prostate_max:.4f}]")
         
         print(f"\n   Performance Assessment:")
         if prostate_mean >= 0.70:
-            print(f"   ✅ EXCELLENT performance! (Dice ≥ 0.70)")
+            print(f"   EXCELLENT performance! (Dice ≥ 0.70)")
         elif prostate_mean >= 0.60:
-            print(f"   ✅ GOOD performance! (Dice ≥ 0.60)")
+            print(f"   GOOD performance! (Dice ≥ 0.60)")
         elif prostate_mean >= 0.50:
-            print(f"   ✅ ACCEPTABLE for this difficult task (Dice ≥ 0.50)")
+            print(f"   ACCEPTABLE for this difficult task (Dice ≥ 0.50)")
         else:
-            print(f"   ⚠️  Room for improvement (Dice < 0.50)")
+            print(f"    Room for improvement (Dice < 0.50)")
     else:
-        print("   ❌ No prostate samples found in test set")
+        print("   No prostate samples found in test set")
     
     # Compare with validation
     if isinstance(best_val_dice, float):
-        print(f"\n📊 Validation vs Test Comparison:")
+        print(f"\n Validation vs Test Comparison:")
         print(f"   Best Validation Dice: {best_val_dice:.4f}")
         print(f"   Test Dice:            {overall_mean:.4f}")
         diff = overall_mean - best_val_dice
         if abs(diff) < 0.03:
-            print(f"   ✅ Consistent performance (diff: {diff:+.4f})")
+            print(f"    Consistent performance (diff: {diff:+.4f})")
         elif diff < -0.05:
-            print(f"   ⚠️  Validation was optimistic (diff: {diff:+.4f})")
+            print(f"     Validation was optimistic (diff: {diff:+.4f})")
         else:
-            print(f"   ✅ Test performance within expected range")
+            print(f"    Test performance within expected range")
     
     # Save results
     results = {
@@ -181,7 +181,7 @@ def evaluate_test_set(checkpoint_path='./checkpoints/best_model.pth'):
     results_path = os.path.join(Config.RESULTS_DIR, 'test_results.json')
     with open(results_path, 'w') as f:
         json.dump(results, f, indent=4)
-    print(f"\n💾 Results saved to: {results_path}")
+    print(f"\nResults saved to: {results_path}")
     
     create_results_visualization(all_dice_scores, class_names)
     
@@ -224,7 +224,7 @@ def create_results_visualization(all_dice_scores, class_names):
     plt.tight_layout()
     fig_path = os.path.join(Config.RESULTS_DIR, 'test_results_bar_chart.png')
     plt.savefig(fig_path, dpi=150, bbox_inches='tight')
-    print(f"📊 Visualization saved to: {fig_path}")
+    print(f"Visualization saved to: {fig_path}")
     plt.close()
 
 
@@ -237,6 +237,6 @@ if __name__ == "__main__":
     results = evaluate_test_set()
     
     if results:
-        print("\n✅ Test evaluation completed successfully!")
+        print("\nTest evaluation completed successfully!")
     else:
-        print("\n❌ Test evaluation failed!")
+        print("\nTest evaluation failed!")
