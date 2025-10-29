@@ -134,6 +134,7 @@ Training converged smoothly, achieving best validation Dice at epoch 9 (0.8903).
   → Only a 1.4% difference in validation vs test, showing excellent generalization.
 
 ---
+
 ### Visual Results
 
 **Overall segmentation quality across structures**
@@ -143,11 +144,33 @@ Training converged smoothly, achieving best validation Dice at epoch 9 (0.8903).
 ![Prediction Sample](recognition/results/prediction_sample_1.png)
 *Figure: Multi-class segmentation result showing MRI slice (left), ground truth (center), and model prediction (right). All six anatomical structures are accurately segmented.*
 
+
+**Colour Legend for Anatomical Structures:**
+| Colour | Class | Structure |
+|-------|-------|-----------|
+| Black/Dark | 0 | Background |
+| Cyan/Light Blue | 1 | Body (soft tissue) |
+| Yellow/Gold | 2 | Bone (pelvis, femur) |
+| Blue | 3 | Bladder |
+| Green | 4 | Rectum |
+| Red/Pink | 5 | Prostate (target organ) |
+
+
 **Prostate-focused overlay (target organ)**
 ![Prostate Overlay](recognition/results/prostate_sample_1.png)
 *Figure: Prostate segmentation overlay where red indicates ground truth, blue shows model prediction, and purple represents correct overlap. High overlap demonstrates accurate prostate boundary delineation.*
 
+**Colour Legend for Prostate Overlay:**
+| Colour | Meaning |
+|-------|---------|
+| Red | Ground truth (expert annotation) |
+| Blue | Model prediction |
+| Purple | Correct overlap (true positives) |
+| Red only | False negatives (missed tissue) |
+| Blue only | False positives (over-segmentation) |
+
 **Note:** Additional prediction samples (prediction_sample_2.png, prediction_sample_3.png) and prostate overlays (prostate_sample_2.png, prostate_sample_3.png) are available in `recognition/results/` demonstrating consistent performance across diverse anatomical variations.
+
 
 ---
 
