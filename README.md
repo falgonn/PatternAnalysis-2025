@@ -121,7 +121,7 @@ Training converged smoothly, achieving best validation Dice at epoch 9 (0.8903).
 | Class        |  Mean Dice | Std Dev |
 | :----------- | :--------: | :-----: |
 | Background   |   0.9107   |  ±0.10  |
-| Body         | **0.9781** |  ±0.01  |
+| Body         |   0.9781   |  ±0.01  |
 | Bone         |   0.8891   |  ±0.02  |
 | Bladder      |   0.9154   |  ±0.11  |
 | Rectum       |   0.8396   |  ±0.04  |
