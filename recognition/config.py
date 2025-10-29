@@ -1,6 +1,5 @@
 """
 Configuration for 3D Prostate Segmentation with Improved U-Net
-FULL TRAINING with 128x128x128 patches
 """
 
 import os
@@ -33,7 +32,7 @@ class Config:
     # Training parameters 
     BATCH_SIZE = 1
     LEARNING_RATE = 1e-4
-    NUM_EPOCHS = 10  # ← FULL TRAINING (not 3!)
+    NUM_EPOCHS = 10 
     WEIGHT_DECAY = 1e-5
     
     # Mixed precision
@@ -47,9 +46,9 @@ class Config:
     PATCH_SIZE = (128, 128, 128)
     
     # Output directories
-    CHECKPOINT_DIR = "./checkpoints_128"  # ← Not "_test"
-    RESULTS_DIR = "./results_128"         # ← Not "_test"
-    LOG_DIR = "./logs_128"                # ← Not "_test"
+    CHECKPOINT_DIR = "./checkpoints" 
+    RESULTS_DIR = "./results"        
+    LOG_DIR = "./logs"                
     
     # Device
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -62,10 +61,10 @@ class Config:
     PIN_MEMORY = True if torch.cuda.is_available() else False
     
     # Checkpointing
-    SAVE_FREQ = 5  # ← Save every 5 epochs (not 1)
+    SAVE_FREQ = 5  # save every 5 epochs
     
     # Early stopping
-    PATIENCE = 5  # ← Real early stopping
+    PATIENCE = 5  # early stopping
     
     # Loss weights for deep supervision
     DEEP_SUPERVISION_WEIGHTS = [1.0, 0.5, 0.25]
@@ -81,7 +80,7 @@ class Config:
     def print_config(cls):
         """Print current configuration"""
         print("="*70)
-        print("Configuration - Improved 3D U-Net [128³ PRODUCTION]")
+        print("Configuration - Improved 3D U-Net")
         print("="*70)
         print(f"System          : {cls.system}")
         print(f"Hostname        : {cls.hostname}")
@@ -89,15 +88,15 @@ class Config:
         print(f"Data exists     : {os.path.exists(cls.DATA_DIR)}")
         
         if os.path.exists(cls.DATA_DIR):
-            print(f"  ✅ Data accessible!")
+            print(f"  Data accessible!")
             try:
                 mri_path = os.path.join(cls.DATA_DIR, 'semantic_MRs')
                 n_files = len([f for f in os.listdir(mri_path) if f.endswith(('.nii', '.nii.gz'))])
-                print(f"  📊 Found {n_files} MRI volumes")
+                print(f"  Found {n_files} MRI volumes")
             except:
                 pass
         else:
-            print(f"  ❌ Data NOT accessible!")
+            print(f"  Data NOT accessible!")
             
         print(f"Device          : {cls.DEVICE}")
         if cls.DEVICE == "cuda":
