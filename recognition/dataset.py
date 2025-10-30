@@ -82,7 +82,7 @@ class ProstateDataset3D(Dataset):
                 self.patient_ids.append(patient_id)
                 matched_count += 1
             else:
-                print(f"⚠️  Warning: No matching label found for {mri_file}")
+                print(f" Warning: No matching label found for {mri_file}")
         
         crop_type = "RANDOM crops" if is_train else "CENTER crops"
         print(f"{'Train' if is_train else 'Val/Test'} dataset: {len(self.mri_files)} volumes ({crop_type})")
@@ -350,9 +350,9 @@ def get_data_loaders(batch_size=None):
     print(f"Train: {len(train_idx)} scans from {len(train_patients)} patients (RANDOM crops)")
     print(f"Val:   {len(val_idx)} scans from {len(val_patients)} patients (CENTER crops)")
     print(f"Test:  {len(test_idx)} scans from {len(test_patients)} patients (CENTER crops)")
-    print(f"\n✅ VERIFIED: No patient appears in multiple splits!")
-    print(f"✅ All timepoints from same patient stay together!")
-    print(f"✅ Val/Test use consistent CENTER crops for reproducible evaluation!")
+    print(f"\n VERIFIED: No patient appears in multiple splits!")
+    print(f"All timepoints from same patient stay together!")
+    print(f"Val/Test use consistent CENTER crops for reproducible evaluation!")
     print("="*70)
     
     return train_loader, val_loader, test_loader
@@ -403,7 +403,7 @@ if __name__ == "__main__":
     # Load same sample again to verify randomness
     mri_train2, label_train2 = train_dataset[0]
     same_values = torch.allclose(mri_train, mri_train2, atol=1e-6)
-    print(f"  Random crop test: {'✅ DIFFERENT crops (correct!)' if not same_values else '❌ Same crop (wrong!)'}")
+    print(f"  Random crop test: {'DIFFERENT crops (correct!)' if not same_values else '❌ Same crop (wrong!)'}")
     
     print("\nEvaluation dataset (center crop):")
     mri_eval, label_eval = eval_dataset[0]
@@ -415,14 +415,14 @@ if __name__ == "__main__":
     # Load same sample again to verify consistency
     mri_eval2, label_eval2 = eval_dataset[0]
     same_values = torch.allclose(mri_eval, mri_eval2, atol=1e-6)
-    print(f"  Center crop test: {'✅ SAME crop (correct!)' if same_values else '❌ Different crop (wrong!)'}")
+    print(f"  Center crop test: {'SAME crop (correct!)' if same_values else '❌ Different crop (wrong!)'}")
     
     # Test dataloaders
     print("\n" + "="*70)
     print("Testing dataloaders...")
     print("="*70)
     train_loader, val_loader, test_loader = get_data_loaders()
-    print("\n✅ Dataloaders created successfully!")
+    print("\nDataloaders created successfully!")
     
     # Test one batch
     for mri_batch, label_batch in train_loader:
@@ -432,5 +432,5 @@ if __name__ == "__main__":
         break
     
     print("\n" + "="*70)
-    print("✅ ALL TESTS PASSED!")
+    print("ALL TESTS PASSED!")
     print("="*70)
