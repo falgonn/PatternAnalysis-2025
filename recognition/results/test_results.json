@@ -1,5 +1,5 @@
 {
-    "checkpoint_epoch": 9,
+    "checkpoint_epoch": 10,
     "validation_dice": 0.8902669727802277,
     "test_dice_per_class": {
         "Background": {
