@@ -4,7 +4,7 @@
 
 **COMP3710 - Pattern Analysis 2025**
 
-A deep learning framework for **3D prostate segmentation** from MRI scans using an **Improved 3D U-Net** with **deep supervision** and **128³ voxel patches**, trained and evaluated with the **MONAI** medical imaging framework.
+A deep learning framework for 3D prostate segmentation from MRI scans using an Improved 3D U-Net with deep supervision and 128³ voxel patches, trained and evaluated with the MONAI medical imaging framework.
 
 ---
 
@@ -25,7 +25,7 @@ A deep learning framework for **3D prostate segmentation** from MRI scans using 
 
 ## Overview
 
-This project addresses automatic **3D segmentation of the prostate gland** from MRI scans — a crucial step in diagnosis and treatment planning for prostate cancer, radiotherapy, and surgical guidance.
+This project addresses automatic 3D segmentation of the prostate gland from MRI scans. This is a crucial step in diagnosis and treatment planning for prostate cancer, radiotherapy, and surgical guidance.
 
 **Segmentation Classes:**
 
@@ -57,7 +57,7 @@ Test:  35  (7 patients)
 
 ### Preprocessing
 - **Normalization:** Z-score per volume (μ=0, σ=1)  
-- **Patch size:** 128 × 128 × 128 voxels (optimal balance of context and memory)  
+- **Patch size:** 128 × 128 × 128 voxels (for optimal balance of context and memory)  
 - **Augmentation (via MONAI):**
   - Random flips and rotations  
   - Intensity scaling/shifting (±10%)  
@@ -91,6 +91,31 @@ Total Loss = 1.0·L_main + 0.5·L_aux1 + 0.25·L_aux2
 
 ````
 
+### Architecture Diagram
+
+```
+Encoder Path                Bottleneck              Decoder Path
+Input (1×128³)                                      Output (6×128³)
+    ↓                                                    ↑
+[Conv+IN+LReLU]×2  ────────────────────────→  [UpConv+Concat]
+[32 features]                                     [Conv+IN+LReLU]×2
+    ↓ MaxPool (2×)                                     ↑
+[Conv+IN+LReLU]×2  ────────────────────────→  [UpConv+Concat]
+[64 features]                                     [Conv+IN+LReLU]×2
+    ↓ MaxPool (2×)                                     ↑
+[Conv+IN+LReLU]×2  ────────────────────────→  [UpConv+Concat]
+[128 features]                                    [Conv+IN+LReLU]×2
+    ↓ MaxPool (2×)                                     ↑
+[Conv+IN+LReLU]×2  ────────────────────────→  [UpConv+Concat]
+[256 features]                                    [Conv+IN+LReLU]×2
+    ↓ MaxPool (2×)                                     ↑
+    [Bottleneck]                               [Final Conv 1×1]
+    [512 features]
+                    
+                    Deep Supervision Outputs
+                           ↓    ↓    ↓
+                    [Auxiliary Loss Heads]
+```
 ---
 
 ## Implementation Details
@@ -105,12 +130,7 @@ Precision: FP16 (automatic mixed precision)
 Framework: PyTorch + MONAI
 ````
 
-Training converged smoothly, achieving best validation Dice at epoch 9 (0.8903). No overfitting was observed.
-
-**Hardware Requirements**
-
-* RAM: ≥8 GB
-* Storage: ~5 GB (dataset + checkpoints)
+Training converged smoothly, achieving best validation Dice at epoch 10 (0.8903). No overfitting was observed.
 
 ---
 
@@ -142,7 +162,7 @@ Training converged smoothly, achieving best validation Dice at epoch 9 (0.8903).
 
 **Example prediction showing all anatomical structures**
 ![Prediction Sample](recognition/results/prediction_sample_1.png)
-*Figure: Multi-class segmentation result showing MRI slice (left), ground truth (center), and model prediction (right). All six anatomical structures are accurately segmented.*
+*Figure: Multi-class segmentation result showing MRI slice (left), ground truth (center), and model prediction (right). The model achieves mostly accurate segmentation across structures.*
 
 
 **Colour Legend for Anatomical Structures:**
@@ -158,7 +178,7 @@ Training converged smoothly, achieving best validation Dice at epoch 9 (0.8903).
 
 **Prostate-focused overlay (target organ)**
 ![Prostate Overlay](recognition/results/prostate_sample_1.png)
-*Figure: Prostate segmentation overlay where red indicates ground truth, blue shows model prediction, and purple represents correct overlap. High overlap demonstrates accurate prostate boundary delineation.*
+*Fig: Prostate segmentation overlay where red indicates ground truth, blue shows model prediction, and purple represents correct overlap. High overlap demonstrates accurate prostate boundary delineation.*
 
 **Colour Legend for Prostate Overlay:**
 | Colour | Meaning |
@@ -169,8 +189,7 @@ Training converged smoothly, achieving best validation Dice at epoch 9 (0.8903).
 | Red only | False negatives (missed tissue) |
 | Blue only | False positives (over-segmentation) |
 
-**Note:** Additional prediction samples (prediction_sample_2.png, prediction_sample_3.png) and prostate overlays (prostate_sample_2.png, prostate_sample_3.png) are available in `recognition/results/` demonstrating consistent performance across diverse anatomical variations.
-
+Additional prediction samples (prediction_sample_2.png, prediction_sample_3.png) and prostate overlays (prostate_sample_2.png, prostate_sample_3.png) are available in `recognition/results/` demonstrating consistent performance across diverse anatomical variations.
 
 ---
 
@@ -258,13 +277,14 @@ patternanalysis-2025/
 
 ### Limitations
 
-* Slightly lower performance for very small or off-center prostates due to limited patch context.
-* Sensitive to unusual intensity variations in MRI scans.
+* Small Dataset Size: The dataset includes only 38 patients, limiting the model’s exposure to anatomical variability and reducing generalization across populations.
+* Single Patch Evaluation: Using only a single 128³ center patch per volume may miss off-center structures, while a sliding-window approach would capture more context albeit at a higher computational cost.
 
-### Future Work
 
-* Multi-scale inputs, attention mechanisms, and full-volume sliding-window inference could improve results.
-* Post-processing with connected components or CR
+### Future Improvements
+
+* The model uses a single 128³ center patch for inference. A sliding-window inference and multi-scale processing could be explored to better capture context and improve segmentation of small or off-center structures.
+* Currently the raw model outputs are used without refinement. However, post-processing techniques and attention mechanisms can be introduced to enhance boundary precision and overall prostate segmentation quality.
 
 ---
 
@@ -282,7 +302,7 @@ patternanalysis-2025/
 
 **Kavya Sikka**
 Student ID: s4913017
-**Course:** COMP3710 – Pattern Analysis 2025
+**Course:** COMP3710 – Pattern Recognition and Analysis
 **Email:** [s4913017@student.uq.edu.au](mailto:s4913017@student.uq.edu.au)
 
 ---
@@ -290,9 +310,8 @@ Student ID: s4913017
 ## License
 
 This project is part of a university coursework submission for educational purposes.
-Dataset © HipMRI Study (used under academic license).
+Dataset for HipMRI Study was used under academic license.
 
-**Last Updated:** October 29, 2025
-**Version:** 2.0 (128³ Implementation)
+**Last Updated:** October 30, 2025
 
 
